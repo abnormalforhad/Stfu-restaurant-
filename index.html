@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestaurantPro - Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .modal-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .modal-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app">
+        <!-- Header -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-20">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-utensils text-orange-500 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">RestaurantPro</h1>
+            </div>
+            <nav class="flex items-center space-x-4 md:space-x-6 text-gray-600">
+                <button data-page="home" class="nav-btn flex items-center space-x-2 text-orange-500 font-semibold">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden md:inline">Home</span>
+                </button>
+                <button data-page="dashboard" class="nav-btn flex items-center space-x-2 hover:text-orange-500">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    <span class="hidden md:inline">Dashboard</span>
+                </button>
+                <button data-page="orders" class="nav-btn flex items-center space-x-2 hover:text-orange-500">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span class="hidden md:inline">Orders</span>
+                </button>
+                <button data-page="menu" class="nav-btn flex items-center space-x-2 hover:text-orange-500">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span class="hidden md:inline">Menu</span>
+                </button>
+            </nav>
+        </header>
+
+        <main id="main-content">
+            <!-- Pages will be rendered here by JavaScript -->
+        </main>
+    </div>
+
+    <!-- Create New Order Modal -->
+    <div id="new-order-modal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-30 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">Create New Order</h2>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-times text-2xl"></i></button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto flex-grow modal-scrollbar">
+                <!-- Left side: Menu Items -->
+                <div class="flex flex-col">
+                    <h3 class="font-semibold text-lg mb-2 sticky top-0 bg-white pb-2">Menu</h3>
+                    <div id="modal-menu-categories" class="space-y-4 overflow-y-auto pr-2">
+                        <!-- Categories and items will be injected here -->
+                    </div>
+                </div>
+                <!-- Right side: Order Details -->
+                <div class="flex flex-col">
+                    <h3 class="font-semibold text-lg mb-2 sticky top-0 bg-white pb-2">Current Order</h3>
+                    <div class="mb-4">
+                        <label for="table-select" class="block text-sm font-medium text-gray-700 mb-1">Table</label>
+                        <select id="table-select" class="w-full p-2 border border-gray-300 rounded-md">
+                            <!-- Available tables will be injected here -->
+                        </select>
+                    </div>
+                    <div id="modal-order-items" class="flex-grow bg-gray-50 p-4 rounded-lg border space-y-2 overflow-y-auto">
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fa-solid fa-cart-shopping mx-auto text-3xl"></i>
+                            <p>No items added yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-between items-center">
+                <div id="modal-total-price" class="text-xl font-bold">Total: ৳0.00</div>
+                <div class="flex space-x-2">
+                    <button id="cancel-order-btn" class="px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 font-semibold">Cancel</button>
+                    <button id="submit-order-btn" disabled class="px-6 py-2 rounded-lg bg-orange-500 text-white font-semibold hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed">Create Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            const state = {
+                activePage: 'home',
+                menuItems: [
+                    // Main Course
+                    { id: 1, name: 'Shorshe Ilish', category: 'Main Course', price: 450, available: true, description: 'Hilsa fish cooked in a pungent mustard gravy. A true Bengali classic.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Shorshe+Ilish' },
+                    { id: 2, name: 'Kacchi Biryani', category: 'Main Course', price: 350, available: true, description: 'Aromatic rice and tender mutton cooked in layers with spices and potatoes.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Kacchi+Biryani' },
+                    { id: 3, name: 'Bhuna Khichuri', category: 'Main Course', price: 250, available: true, description: 'A rich and savory dish of rice and lentils, slow-cooked with spices.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Bhuna+Khichuri' },
+                    { id: 4, name: 'Chingri Malai Curry', category: 'Main Course', price: 400, available: true, description: 'Prawns cooked in a creamy and flavorful coconut milk gravy.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Chingri+Malai+Curry' },
+                    { id: 5, name: 'Rui Kalia', category: 'Main Course', price: 300, available: true, description: 'Rohu fish cooked in a rich, spicy, and tangy onion-ginger-garlic gravy.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Rui+Kalia' },
+                    { id: 6, name: 'Kosha Mangsho', category: 'Main Course', price: 380, available: true, description: 'Slow-cooked spicy mutton curry with a thick, dark gravy.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Kosha+Mangsho' },
+                    { id: 7, name: 'Morog Polao', category: 'Main Course', price: 320, available: true, description: 'Fragrant pilaf cooked with chicken, ghee, and a blend of aromatic spices.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Morog+Polao' },
+                    
+                    // Rice
+                    { id: 20, name: 'Sada Bhat (Plain Rice)', category: 'Rice', price: 40, available: true, description: 'Steamed basmati rice.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Sada+Bhat' },
+                    { id: 21, name: 'Ghee Bhat', category: 'Rice', price: 60, available: true, description: 'Rice flavored with clarified butter and whole spices.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Ghee+Bhat' },
+                    { id: 22, name: 'Basanti Polao', category: 'Rice', price: 120, available: true, description: 'Sweet, fragrant rice cooked with saffron, nuts, and raisins.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Basanti+Polao' },
+
+                    // Appetizers & Snacks
+                    { id: 8, name: 'Fuchka', category: 'Appetizer', price: 80, available: true, description: 'Crispy hollow spheres filled with spiced potatoes, chickpeas, and tangy tamarind water.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Fuchka' },
+                    { id: 9, name: 'Beguni', category: 'Appetizer', price: 50, available: true, description: 'Thin slices of eggplant coated in gram flour batter and deep-fried until crispy.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Beguni' },
+                    { id: 10, name: 'Singara', category: 'Appetizer', price: 40, available: true, description: 'Flaky pastry filled with a savory mixture of spiced potatoes, peas, and nuts.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Singara' },
+                    { id: 11, name: 'Mughlai Paratha', category: 'Appetizer', price: 150, available: true, description: 'A rich, pan-fried bread stuffed with minced meat, egg, onions, and green chilies.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Mughlai+Paratha' },
+
+                    // Desserts
+                    { id: 12, name: 'Mishti Doi', category: 'Dessert', price: 100, available: true, description: 'Sweet, caramelized yogurt, a traditional Bengali delicacy.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Mishti+Doi' },
+                    { id: 13, name: 'Roshogolla', category: 'Dessert', price: 120, available: true, description: 'Spongy cottage cheese balls soaked in a light sugar syrup.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Roshogolla' },
+                    { id: 14, name: 'Patishapta Pitha', category: 'Dessert', price: 90, available: true, description: 'Thin crepes made from rice flour, filled with a coconut and jaggery mixture.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Patishapta' },
+                    { id: 15, name: 'Chomchom', category: 'Dessert', price: 110, available: true, description: 'Oval-shaped sweets made from cottage cheese, cooked in sugar syrup.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Chomchom' },
+
+                    // Drinks
+                    { id: 16, name: 'Borhani', category: 'Drinks', price: 70, available: true, description: 'A spicy yogurt drink with mint, coriander, and green chilies, perfect for digestion.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Borhani' },
+                    { id: 17, name: 'Lassi', category: 'Drinks', price: 80, available: true, description: 'A refreshing sweet or salty yogurt-based drink.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Lassi' },
+                    { id: 18, name: 'Aam Shorbot', category: 'Drinks', price: 90, available: true, description: 'A sweet and tangy green mango drink, perfect for summer.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Aam+Shorbot' },
+                    { id: 19, name: 'Doodh Cha', category: 'Drinks', price: 30, available: true, description: 'Traditional Bengali milk tea, brewed strong with sugar.', image: 'https://placehold.co/300x200/f0f0f0/333?text=Doodh+Cha' },
+                ],
+                orders: [],
+                tables: Array.from({ length: 20 }, (_, i) => ({ id: i + 1, status: 'available', orderId: null, displayTime: null, items: [], total: 0 })),
+                modalOrderItems: [],
+            };
+
+            const NEEDS_ATTENTION_THRESHOLD = 10 * 60 * 1000; // 10 minutes
+
+            // --- DOM Elements ---
+            const mainContent = document.getElementById('main-content');
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const modal = document.getElementById('new-order-modal');
+
+            // --- TEMPLATES ---
+            const HomePageTemplate = () => {
+                const banners = [
+                    { title: "Today's Special: Shorshe Ilish", subtitle: "Experience the authentic taste of Bengal!", image: "https://placehold.co/1200x400/f97316/ffffff?text=Shorshe+Ilish+Special" },
+                    { title: "Weekend Biryani Festival", subtitle: "Enjoy our famous Kacchi Biryani at a special price.", image: "https://placehold.co/1200x400/3b82f6/ffffff?text=Biryani+Festival" },
+                    { title: "Sweet Endings", subtitle: "Try our delicious Mishti Doi and Roshogolla.", image: "https://placehold.co/1200x400/10b981/ffffff?text=Bengali+Sweets" },
+                ];
+                let currentBannerIndex = 0;
+
+                const page = document.createElement('div');
+                page.innerHTML = `
+                    <div class="bg-gray-50">
+                        <div id="banner" class="relative h-64 md:h-96 bg-cover bg-center text-white flex items-center justify-center transition-all duration-500" style="background-image: url(${banners[0].image})">
+                            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                            <div id="banner-content" class="relative text-center p-4">
+                                <h2 class="text-3xl md:text-5xl font-bold mb-2">${banners[0].title}</h2>
+                                <p class="text-lg md:text-xl">${banners[0].subtitle}</p>
+                                <button id="view-menu-btn" class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-110">
+                                    View Menu
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-8 text-center">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-2">Welcome to RestaurantPro</h3>
+                            <p class="text-gray-600 max-w-2xl mx-auto">
+                                Your destination for the most authentic and delicious Bengali cuisine. From traditional main courses to delightful sweets and refreshing drinks, we bring the heart of Bengal to your plate. Manage your restaurant operations seamlessly with our powerful dashboard.
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                const bannerElement = page.querySelector('#banner');
+                const bannerContent = page.querySelector('#banner-content');
+                setInterval(() => {
+                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                    const banner = banners[currentBannerIndex];
+                    bannerElement.style.backgroundImage = `url(${banner.image})`;
+                    bannerContent.innerHTML = `
+                        <h2 class="text-3xl md:text-5xl font-bold mb-2">${banner.title}</h2>
+                        <p class="text-lg md:text-xl">${banner.subtitle}</p>
+                        <button id="view-menu-btn" class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-110">
+                            View Menu
+                        </button>
+                    `;
+                    page.querySelector('#view-menu-btn').addEventListener('click', () => navigateTo('menu'));
+                }, 5000);
+                
+                page.querySelector('#view-menu-btn').addEventListener('click', () => navigateTo('menu'));
+
+                return page;
+            };
+
+            const DashboardPageTemplate = () => {
+                const availableTables = state.tables.filter(t => t.status === 'available').length;
+                const occupiedTables = state.tables.filter(t => t.status === 'occupied').length;
+                const needsAttention = state.tables.filter(t => t.status === 'needs-attention').length;
+                const totalRevenue = state.orders.filter(o => o.paymentStatus === 'paid').reduce((sum, order) => sum + order.total, 0);
+
+                const getStatusStyles = (status) => {
+                    switch (status) {
+                        case 'available': return { icon: 'fa-check-circle text-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+                        case 'occupied': return { icon: 'fa-clock text-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
+                        case 'needs-attention': return { icon: 'fa-exclamation-triangle text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
+                        default: return { icon: '', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' };
+                    }
+                };
+
+                return `
+                    <div class="p-6 bg-gray-50 min-h-screen">
+                        <h2 class="text-2xl font-bold text-gray-800">Restaurant Dashboard</h2>
+                        <p class="text-gray-500 mb-6">Monitor all table orders, timing, and revenue in real-time</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4"><div class="bg-green-100 p-3 rounded-full"><i class="fa-solid fa-check-circle text-green-500 text-2xl"></i></div><div><p class="text-gray-500 text-sm">Available Tables</p><p class="text-2xl font-bold text-gray-800">${availableTables}<span class="text-lg font-normal text-gray-500">/20</span></p></div></div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4"><div class="bg-blue-100 p-3 rounded-full"><i class="fa-solid fa-clock text-blue-500 text-2xl"></i></div><div><p class="text-gray-500 text-sm">Occupied Tables</p><p class="text-2xl font-bold text-gray-800">${occupiedTables + needsAttention}<span class="text-lg font-normal text-gray-500">/20</span></p></div></div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4"><div class="bg-red-100 p-3 rounded-full"><i class="fa-solid fa-exclamation-triangle text-red-500 text-2xl"></i></div><div><p class="text-gray-500 text-sm">Needs Attention</p><p class="text-2xl font-bold text-gray-800">${needsAttention}</p></div></div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4"><div class="bg-orange-100 p-3 rounded-full"><i class="fa-solid fa-chart-bar text-orange-500 text-2xl"></i></div><div><p class="text-gray-500 text-sm">Today's Revenue</p><p class="text-2xl font-bold text-gray-800">৳${totalRevenue.toFixed(2)}</p></div></div>
+                        </div>
+                        <div class="flex justify-between items-center mb-4">
+                             <h3 class="text-xl font-bold text-gray-800">All Tables</h3>
+                             <div class="flex items-center space-x-4 text-sm"><span class="flex items-center"><div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>Available</span><span class="flex items-center"><div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>Occupied</span><span class="flex items-center"><div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>Needs Attention</span></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            ${state.tables.map(table => {
+                                const { icon, bgColor, borderColor } = getStatusStyles(table.status);
+                                return `
+                                <div class="rounded-lg shadow-sm border ${borderColor} ${bgColor} p-4 flex flex-col">
+                                    <div class="flex justify-between items-center mb-4">
+                             
